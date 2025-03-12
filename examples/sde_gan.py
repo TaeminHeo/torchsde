@@ -37,6 +37,21 @@ import torchcde
 import torchsde
 import tqdm
 
+import os
+import torch.utils.tensorboard as tb
+from torch.utils.tensorboard import SummaryWriter
+
+# Set paths
+log_dir = "/content/drive/MyDrive/projects/sde_gan/tensorboards"
+model_dir = "/content/drive/MyDrive/projects/sde_gan/models"
+fig_dir = "/content/drive/MyDrive/projects/sde_gan/figs"
+
+# Create directories for logs and model checkpoints
+os.makedirs(log_dir, exist_ok=True)
+os.makedirs(model_dir, exist_ok=True)
+
+# Initialize TensorBoard
+writer = SummaryWriter(log_dir=log_dir)
 
 ###################
 # First some standard helper objects.
@@ -253,7 +268,7 @@ def get_data(batch_size, device):
 ###################
 # We'll plot some results at the end.
 ###################
-def plot(ts, generator, dataloader, num_plot_samples, plot_locs):
+def plot(ts, generator, dataloader, num_plot_samples, plot_locs, savedir):
     # Get samples
     real_samples, = next(iter(dataloader))
     assert num_plot_samples <= real_samples.size(0)
@@ -281,6 +296,7 @@ def plot(ts, generator, dataloader, num_plot_samples, plot_locs):
         plt.ylabel('Density')
         plt.title(f'Marginal distribution at time {time}.')
         plt.tight_layout()
+        plt.savefig(os.path.join(savedir,prop))
         plt.show()
 
     real_samples = real_samples[:num_plot_samples]
@@ -343,16 +359,20 @@ def main(
         generator_lr=2e-4,      # Learning rate often needs careful tuning to the problem.
         discriminator_lr=1e-3,  # Learning rate often needs careful tuning to the problem.
         batch_size=1024,        # Batch size.
-        steps=10000,            # How many steps to train both generator and discriminator for.
+        steps=100,            # How many steps to train both generator and discriminator for.
         init_mult1=3,           # Changing the initial parameter size can help.
         init_mult2=0.5,         #
         weight_decay=0.01,      # Weight decay.
-        swa_step_start=5000,    # When to start using stochastic weight averaging.
+        swa_step_start=50,    # When to start using stochastic weight averaging.
 
         # Evaluation and plotting hyperparameters
         steps_per_print=10,                   # How often to print the loss.
         num_plot_samples=50,                  # How many samples to use on the plots at the end.
         plot_locs=(0.1, 0.3, 0.5, 0.7, 0.9),  # Plot some marginal distributions at this proportion of the way along.
+
+        # Log and save results
+        savedir='/content/drive/MyDrive/projects/sde_gan/figs',
+        writer=None
 ):
     is_cuda = torch.cuda.is_available()
     device = 'cuda' if is_cuda else 'cpu'
@@ -422,15 +442,20 @@ def main(
 
         if (step % steps_per_print) == 0 or step == steps - 1:
             total_unaveraged_loss = evaluate_loss(ts, batch_size, train_dataloader, generator, discriminator)
+            writer.add_scalar("Loss/Discriminator", total_unaveraged_loss, step)
             if step > swa_step_start:
                 total_averaged_loss = evaluate_loss(ts, batch_size, train_dataloader, averaged_generator.module,
                                                     averaged_discriminator.module)
+                writer.add_scalar("Loss/Averaged_Discriminator", total_averaged_loss, step)
                 trange.write(f"Step: {step:3} Loss (unaveraged): {total_unaveraged_loss:.4f} "
                              f"Loss (averaged): {total_averaged_loss:.4f}")
             else:
                 trange.write(f"Step: {step:3} Loss (unaveraged): {total_unaveraged_loss:.4f}")
     generator.load_state_dict(averaged_generator.module.state_dict())
     discriminator.load_state_dict(averaged_discriminator.module.state_dict())
+
+    torch.save(generator.state_dict(), f"{model_dir}/generator.pth")
+    torch.save(discriminator.state_dict(), f"{model_dir}/discriminator.pth")
 
     _, _, test_dataloader = get_data(batch_size=batch_size, device=device)
 

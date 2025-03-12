@@ -359,14 +359,14 @@ def main(
         generator_lr=2e-4,      # Learning rate often needs careful tuning to the problem.
         discriminator_lr=1e-3,  # Learning rate often needs careful tuning to the problem.
         batch_size=1024,        # Batch size.
-        steps=100,            # How many steps to train both generator and discriminator for.
+        steps=5000,            # How many steps to train both generator and discriminator for.
         init_mult1=3,           # Changing the initial parameter size can help.
         init_mult2=0.5,         #
         weight_decay=0.01,      # Weight decay.
-        swa_step_start=50,    # When to start using stochastic weight averaging.
+        swa_step_start=2500,    # When to start using stochastic weight averaging.
 
         # Evaluation and plotting hyperparameters
-        steps_per_print=10,                   # How often to print the loss.
+        steps_per_print=100,                   # How often to print the loss.
         num_plot_samples=50,                  # How many samples to use on the plots at the end.
         plot_locs=(0.1, 0.3, 0.5, 0.7, 0.9),  # Plot some marginal distributions at this proportion of the way along.
 

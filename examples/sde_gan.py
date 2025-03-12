@@ -38,7 +38,6 @@ import torchsde
 import tqdm
 
 import os
-import torch.utils.tensorboard as tb
 from torch.utils.tensorboard import SummaryWriter
 
 # Set paths
@@ -268,7 +267,7 @@ def get_data(batch_size, device):
 ###################
 # We'll plot some results at the end.
 ###################
-def plot(ts, generator, dataloader, num_plot_samples, plot_locs, savedir):
+def plot(ts, generator, dataloader, num_plot_samples, plot_locs, fig_dir):
     # Get samples
     real_samples, = next(iter(dataloader))
     assert num_plot_samples <= real_samples.size(0)
@@ -296,7 +295,7 @@ def plot(ts, generator, dataloader, num_plot_samples, plot_locs, savedir):
         plt.ylabel('Density')
         plt.title(f'Marginal distribution at time {time}.')
         plt.tight_layout()
-        plt.savefig(os.path.join(savedir,prop))
+        plt.savefig(os.path.join(fig_dir,prop))
         plt.show()
 
     real_samples = real_samples[:num_plot_samples]
@@ -316,6 +315,7 @@ def plot(ts, generator, dataloader, num_plot_samples, plot_locs, savedir):
     plt.legend()
     plt.title(f"{num_plot_samples} samples from both real and generated distributions.")
     plt.tight_layout()
+    plt.savefig(os.path.join(fig_dir,'samples.png'))
     plt.show()
 
 
@@ -371,8 +371,8 @@ def main(
         plot_locs=(0.1, 0.3, 0.5, 0.7, 0.9),  # Plot some marginal distributions at this proportion of the way along.
 
         # Log and save results
-        savedir='/content/drive/MyDrive/projects/sde_gan/figs',
-        writer=None
+        fig='/content/drive/MyDrive/projects/sde_gan/figs',
+        writer=writer
 ):
     is_cuda = torch.cuda.is_available()
     device = 'cuda' if is_cuda else 'cpu'
@@ -459,7 +459,7 @@ def main(
 
     _, _, test_dataloader = get_data(batch_size=batch_size, device=device)
 
-    plot(ts, generator, test_dataloader, num_plot_samples, plot_locs)
+    plot(ts, generator, test_dataloader, num_plot_samples, plot_locs,fig_dir)
 
 
 if __name__ == '__main__':

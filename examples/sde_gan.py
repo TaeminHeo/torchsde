@@ -295,7 +295,7 @@ def plot(ts, generator, dataloader, num_plot_samples, plot_locs, fig_dir):
         plt.ylabel('Density')
         plt.title(f'Marginal distribution at time {time}.')
         plt.tight_layout()
-        plt.savefig(os.path.join(fig_dir,prop))
+        plt.savefig(os.path.join(fig_dir,f'{prop}.png'))
         plt.show()
 
     real_samples = real_samples[:num_plot_samples]
